@@ -1,4 +1,4 @@
-# powershell-fluent-assert
+# powershell-logger
 
 A simple PowerShell library for instantiating a logging object. Console output colours can be configured and log files contain ANSI escape codes to which produce colour output in supported applications.
 
@@ -40,8 +40,6 @@ TBA
 TBA
 
 ```
-
-Please see Assert.Unit.Tests.ps1 for example of writing tests (pester).
 
 ## Contributing
 
