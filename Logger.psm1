@@ -1,101 +1,230 @@
 Class Logger{
 
-    #determines which level of items to log
-    Hidden [Levels]         $pLoggingLevel
+    static $EMERGENCY                   = @(7, 'EMERGENCY')
+    static $ALERT                       = @(6, 'ALERT')
+    static $CRITICAL                    = @(5, 'CRITICAL')
+    static $GENERAL_ERROR               = @(4, 'ERROR')
+    static $WARNING                     = @(3, 'WARNING')
+    static $NOTICE                      = @(2, 'NOTICE')
+    static $INFO                        = @(1, 'INFO')
+    static $DEBUG                       = @(0, 'DEBUG')
 
-    #console logging options
-    Hidden [boolean]        $pLogToConsole  = $null
+    # static $EMERGENCY_MESSAGE           = 'An EMERGENCY has occurred.'
+    # static $ALERT_MESSAGE               = 'An ALERT has been raised.'
+    # static $CRITICAL_MESSAGE            = 'A CRITICAL error has occurred.'
+    # static $GENERAL_ERROR_MESSAGE       = 'A GENERAL ERROR has occurred.'
+    # static $WARNING_MESSAGE             = 'A WARNING has been raised.'
+    # static $NOTICE_MESSAGE              = 'A NOTICE has been raised.'
+    # static $INFO_MESSAGE                = 'INFO has been raised.'
+    # static $DEBUG_MESSAGE               = 'DEBUG has been raised.'
 
-    #logfile options
-    Hidden [boolean]        $pLogToFile     = $null
+    #opererating environment options
+    static $PRODUCTION                  = 'PRODUCTION'
+    static $DEVELOPMENT                 = 'DEVELOPMENT'
 
-    Hidden [string]         $pLogFileName   = $null
-    Hidden [string]         $pLogFilePath   = $null
-    
-    Hidden [Environments]   $pEnvironment                       #DEVELOPMENT or PRODUCTION
-    Hidden [string]         $pOperationID   = $null
-    Hidden [string]         $pVersionID     = $null
-    Hidden [Levels]         $pLevel
-    Hidden [string]         $pValue         = $null
-    Hidden [string]         $pMessage       = $null
-    Hidden [string]         $pClassName     = $null
-    Hidden [string]         $pFunctionName  = $null
-    Hidden [string]         $pMethodName    = $null
-    Hidden [string]         $pPropertyName  = $null
+    #Constructor options
+    Hidden [array]      $pLoggingLevel  = [Logger]::INFO        # log all events equal to or greater than this level
 
+    Hidden [boolean]    $pLogToConsole  = $true                 # output to console?
+
+    Hidden [boolean]    $pLogToFile     = $false                # output to a logfile?
+
+    Hidden [string]     $pLogFilepath   = ''                    # path to the log file
+
+    Hidden [string]     $pLogFilename   = ''                    # filename of the log file
+
+    Hidden [string]     $pVersion       = ''                    # version
+
+    Hidden [string]     $pEnvironment   = ''                    # DEVELOPMENT or PRODUCTION
+
+    Hidden [string]     $pOperationID   = ''                    # a unique/transaction identifier
+
+    # Message Logging options - use the reset() method to do this once the object has been created
+    Hidden [array]      $pLevel         = [Logger]::DEBUG       # level of the current log message
+
+    Hidden [string]     $pMessage       = ''
+
+    Hidden [string]     $pFieldName     = ''
+
+    Hidden              $pValue         = $null
+
+    Hidden [string]     $pPropertyPath  = ''
+
+    Hidden [string]     $pFile          = ''                    # Optional invocation location details
+
+    Hidden [int]        $pLine          = $null                 # Optional invocation location details
+
+    #constructors
     Logger()
     {
-        $this.Logger($null, $null, $null, $null, $null, $null, $null, $null)
     }
-    Logger($operationID)
+    Logger( [string]    $operationID)
     {
-        $this.Logger($null, $null, $null, $null, $null, $null, $operationID, $null)
+        $this.operationID($operationID)
     }
-    #constructor
-    Logger([boolean] $logToConsole, [boolean] $logToFile, [string] $logFilePath, [string] $logFileName, [Levels] $loggingLevel, $versionID, $operationID, [Environments] $environment)
+    Logger( [array]     $loggingLevel, 
+            [boolean]   $logToConsole, 
+            [boolean]   $logToFile, 
+            [string]    $logFilepath, 
+            [string]    $logFilename, 
+            [string]    $version, 
+            [string]    $environment, 
+            [string]    $operationID
+    )
     {
-        $this.pEnvironment      = $environment
-        $this.pLogToConsole     = $logToConsole
-        $this.pLogToFile        = $logToFile
-        $this.pLogFilePath      = $logFilePath
-        $($this.pLogFilePath).TrimEnd('\','/')
-
-        $this.pLogFileName      = $logFileName
-        $this.pLoggingLevel     = $loggingLevel
-
-        $this.pOperationID      = $operationID
-        $this.pversionID        = $versionID
-
-        if ( $logToConsole -eq $null )
-        {
-            $this.pLogToConsole = $true
-        }
-        if ( $logToFile -eq $null ) 
-        {        
-            $this.pLogToFile = $false
-        }
-
-        if ( -not ($this.pLoggingLevel) )
-        {
-            $this.pLoggingLevel = [Levels]::INFO
-        }
+        $this.loggingLevel($loggingLevel)
+        $this.logToConsole($logToConsole)
+        $this.logToFile($logToFile)
+        $this.logFilepath($logFilePath)
+        $this.logFilename($logFileName)
+        $this.version($version)
+        $this.environment($environment)
+        $this.operationID($operationID)
     }
 
     <#
+    .SYNOPSIS
+    Set the loggingLevel property
+    .PARAMETER loggingLevel
+    The threshold of levels to be logged. Use the built in static properties.
     .NOTES
-    @param enum [string] $operationID
+    @return Logger
+    #>
+    [Logger] loggingLevel([array] $loggingLevel)
+    {
+        $this.pLoggingLevel = $loggingLevel
+
+        return $this
+    }
+
+    <#
+    .SYNOPSIS
+    Output to console?
+    .PARAMETER logToConsole
+    Boolean
+    .NOTES
+    @return Logger
+    #>
+    [Logger] logToConsole()
+    {
+        return $this.logToConsole($true)
+    }
+    [Logger] logToConsole([bool] $logToConsole)
+    {
+        $this.pLogToConsole = $logToConsole
+
+        return $this
+    }
+
+    <#
+    .SYNOPSIS
+    Output to file?
+    .PARAMETER logToFile
+    Boolean
+    .NOTES
+    @return Logger
+    #>
+    [Logger] logToFile()
+    {
+        return $this.logToFile($true)
+    }
+    [Logger] logToFile([bool] $logToFile)
+    {
+        $this.pLogToFile = $logToFile
+
+        return $this
+    }
+
+    <#
+    .SYNOPSIS
+    Set the logFilePath property
+    .PARAMETER version
+    The logFilePath property
+    .NOTES
+    Trims any slashes off the end of the path string, if present
+    @return Logger
+    #>
+    [Logger] logFilepath([string] $logFilepath)
+    {
+        $this.plogFilepath = $($logFilepath).TrimEnd('\','/')
+
+        return $this
+    }
+
+    <#
+    .SYNOPSIS
+    Set the logFile property (Not the full path, just the filename of the log file)
+    .PARAMETER version
+    The logFile property
+    .NOTES
+    Not the full path, just the filename of the log file
+    @return Logger
+    #>
+    [Logger] logFilename([string] $logFilename)
+    {
+        $this.pLogFilename = $logFilename
+
+        return $this
+    }
+
+    <#
+    .SYNOPSIS
+    Set the version property
+    .PARAMETER version
+    The version property (version ID)
+    .NOTES
+    @return Logger
+    #>
+    [Logger] version([string] $version)
+    {
+        $this.pVersion = $version
+
+        return $this
+    }
+
+    <#
+    .SYNOPSIS
+    Set the environment property
+    .PARAMETER environment
+    The environment property (production or development)
+    .NOTES
+    @return Logger
+    #>
+    [Logger] environment([string] $environment)
+    {
+        $this.pEnvironment = $environment
+
+        return $this
+    }
+
+    <#
+    .SYNOPSIS
+    Set the operationID property
+    .PARAMETER operationID
+    A unique ID for the operation
+    .NOTES
     @return Logger
     #>
     [Logger] operationID([string] $operationID)
     {
         $this.pOperationID = $operationID
+
         return $this
     }
+
     <#
+    .PARAMETER level
+    Use the built in static levels
     .NOTES
-    @param enum [Levels] $level
+    @param array $level
     @return Logger
     #>
-    [Logger] level($level)
+    [Logger] level([array] $level)
     {
-        
-        $this.pLevel = [Levels] $level
+        $this.pLevel = $level
+
         return $this
     }
-
-
-      <#
-        .NOTES
-        @param string $message
-        @return Logger
-        #>
-        [Logger] powershellError($message)
-        {
-            $this.pMessage = $message
-            return $this
-        }
-
-
 
     <#
     .NOTES
@@ -105,8 +234,22 @@ Class Logger{
     [Logger] message($message)
     {
         $this.pMessage = $message
+
         return $this
     }
+
+    <#
+    .NOTES
+    @param string $fieldName
+    @return Logger
+    #>
+    [Logger] fieldName($fieldName)
+    {
+        $this.pFieldName = $fieldName
+
+        return $this
+    }
+
     <#
     .NOTES
     @param mixed $value
@@ -115,60 +258,63 @@ Class Logger{
     [Logger] value($value)
     {
         $this.pValue = $value
+ 
         return $this
     }
+ 
     <#
     .NOTES
-    @param string $className
+    @param string $propertyPath
     @return Logger
     #>
-    [Logger] className([string] $className)
+    [Logger] propertyPath([string] $propertyPath)
     {
-        $this.pClassName = $className
-        return $this
-    }
-    <#
-    .NOTES
-    @param string $functionName
-    @return Logger
-    #>
-    [Logger] functionName([string] $functionName)
-    {
-        
-        $this.pFunctionName = $functionName
-        return $this
-    }
-    <#
-    .NOTES
-    @param string $methodName
-    @return Logger
-    #>
-    [Logger] methodName([string] $methodName)
-    {
-        
-        $this.pmethodName = $methodName
-        return $this
-    }
-    <#
-    .NOTES
-    @param string $propertyName
-    @return Logger
-    #>
-    [Logger] propertyName([string] $propertyName)
-    {
-        
-        $this.pPropertyName = $propertyName
+        $this.pPropertyPath = $propertyPath
+
         return $this
     }
 
-    reset()
+    <#
+    .NOTES
+    @param string $file
+    @return Logger
+    #>
+    [Logger] file([string] $file)
     {
-        $this.pLevel            = [Levels]::NOTICE
-        $this.pMessage          = $null
-        $this.pValue            = $null
-        $this.pClassName        = $null    
-        $this.pFunctionName     = $null
-        $this.pPropertyName     = $null
+        $this.pFile = $file
+
+        return $this
+    }
+    <#
+    .NOTES
+    @param int $line
+    @return Logger
+    #>
+    [Logger] line([int] $line)
+    {
+        
+        $this.pLine = $line
+
+        return $this
+    }
+
+    <#
+    .SYNOPSIS
+    Reset the basic message output details
+    .NOTES
+    @return Logger
+    #>
+    [Logger] reset()
+    {
+        $this.level([Logger]::DEBUG)
+        $this.message('')
+        $this.fieldName('')
+        $this.value($null)
+        $this.propertyPath('')
+        $this.file('')
+        $this.line($null)
+
+        return $this
     }
 
    #https://technet.microsoft.com/en-us/library/ee692799.aspx
@@ -194,14 +340,17 @@ Class Logger{
 
 
     # Output current data to a file 
-    WriteToLogFile([string] $outputMessage)
+    Hidden WriteToLogFile([string] $message)
     {
-        if ( -not ($this.pLogToFile) )
+        if ( $this.pLogToFile -ne $true )
         {
             exit
         }
-        
-        add-content -path "$($this.pLogFilePath)\$($this.pLogFileName)" -value $outputMessage
+        if ( [string]::IsNullOrEmpty($this.pLogFilePath) -or [string]::IsNullOrEmpty($this.pLogFileName) )
+        {
+            exit
+        }
+        add-content -path "$($this.pLogFilePath)\$($this.pLogFileName)" -value $message
     }
 
     # Write()
@@ -216,131 +365,123 @@ Class Logger{
     # Output current data to the console
     Write()
     {
-        if ( -not ($this.plevel) )      {$this.pLevel        = [Levels]::NOTICE}
+        if ( -not ($this.pLevel) )      {$this.pLevel        = [Logger]::NOTICE}
         
-        if ( $this.pLevel -gt $this.pLoggingLevel )
+        if ( $this.pLevel[0] -lt $this.pLoggingLevel[0] )
         {
             exit
         }
 
-        $outputMessage = ""
+        $message = ""
 
-        if ( $this.pMessage         )       {$outputMessage    =   "MESSAGE: $($this.pMessage) | $outputMessage"}
-        if ( $this.pValue           )       {$outputMessage    =   "VALUE: $($this.pValue) | $outputMessage"}
-        if ( $this.pPropertyName    )       {$outputMessage    =   "PROPERTY: $($this.pPropertyName) | $outputMessage"}
-        if ( $this.pFunctionName    )       {$outputMessage    =   "FUNCTION: $($this.pFunctionName) | $outputMessage"}
-        if ( $this.pMethodName      )       {$outputMessage    =   "METHOD: $($this.pMethodName) | $outputMessage"}
-        if ( $this.pClassName       )       {$outputMessage    =   "CLASS: $($this.pClassName) | $outputMessage"}
+        if ( $this.pMessage         )       {$message    =   "MESSAGE: $($this.pMessage)            | $message"}
+        if ( $this.pValue           )       {$message    =   "VALUE: $($this.pValue.ToString())     | $message"}
+        if ( $this.pFieldName       )       {$message    =   "FIELDNAME: $($this.pPropertyName)     | $message"}
+        if ( $this.pPropertyPath    )       {$message    =   "PROPERTYPATH: $($this.pPropertyPath)  | $message"}
+        if ( $this.pLine            )       {$message    =   "LINE: $($this.pLine)                  | $message"}
+        if ( $this.pFile            )       {$message    =   "FILE: $($this.pFile)                  | $message"}
         # | memoryLoad | cpuLoad    #too slow to include this info!
 
 
-        $outputMessage = "$($this.pLevel.ToString().PadRight(10))| $outputMessage"
+        $message = "$($this.pLevel[1].ToString().PadRight(10))| $message"
 
-        if ( $this.pEnvironment       )     {$outputMessage    =   "$($this.pEnvironment.ToString().PadRight(12))| $outputMessage"}
-        if ( $this.pVersionID       )       {$outputMessage    =   "$($this.pVersionID) | $outputMessage"}
-        if ( $this.pOperationID     )       {$outputMessage    =   "$($this.pOperationID) | $outputMessage"}
+        if ( $this.pEnvironment     )       {$message    =   "$($this.pEnvironment.ToString().PadRight(12))| $message"}
+        if ( $this.pVersion         )       {$message    =   "$($this.pVersion)                     | $message"}
+        if ( $this.pOperationID     )       {$message    =   "$($this.pOperationID)                 | $message"}
 
-        $outputMessage = $outputMessage | timestamp
+        $message = $message | timestamp
 
-        $outputMessage = $outputMessage.TrimEnd('| ')
+        $message = $message.TrimEnd('| ')   #trim any junk off the end of the message
 
-        switch ( [Levels] $this.pLevel -as [int] )
+        switch ( $this.pLevel[0] )
         {
-            ( [Levels]::EMERGENCY -as [int] )
+            ( [Logger]::EMERGENCY[0] )
             {
                 if ( $this.pLogToConsole )
                 { 
                     $foregroundColor   = "White"
                     $backgroundColor   = "Red"
-                    Write-Host $outputMessage -ForegroundColor $foregroundColor -BackgroundColor $backgroundColor
+                    Write-Host $message -ForegroundColor $foregroundColor -BackgroundColor $backgroundColor
                 }
-
-                $outputMessage = $outputMessage | fontColourEmergency
-                $this.WriteToLogFile($outputMessage)
+                $message = $message | fontColourEmergency
+                $this.WriteToLogFile($message)
             }
-            ( [Levels]::ALERT -as [int] )
+            ( [Logger]::ALERT[0] )
             {
                 if ( $this.pLogToConsole )
                 { 
                     $foregroundColor   = "Red"
                     $backgroundColor   = "White"
-                    Write-Host $outputMessage -ForegroundColor $foregroundColor -BackgroundColor $backgroundColor
+                    Write-Host $message -ForegroundColor $foregroundColor -BackgroundColor $backgroundColor
                 }
-
-                $outputMessage = $outputMessage | fontColourAlert
-                $this.WriteToLogFile($outputMessage)
+                $message = $message | fontColourAlert
+                $this.WriteToLogFile($message)
             }
-            ( [Levels]::CRITICAL -as [int] )
+            ( [Logger]::CRITICAL[0] )
             {
                 if ( $this.pLogToConsole ) 
                 { 
                     $foregroundColor   = "Yellow"
                     $backgroundColor   = "Red"
-                    Write-Host $outputMessage -ForegroundColor $foregroundColor -BackgroundColor $backgroundColor
+                    Write-Host $message -ForegroundColor $foregroundColor -BackgroundColor $backgroundColor
                 }
-
-                $outputMessage = $outputMessage | fontColourCritical
-                $this.WriteToLogFile($outputMessage)
+                $message = $message | fontColourCritical
+                $this.WriteToLogFile($message)
             }
-            ( [Levels]::ERROR -as [int] )
+            ( [Logger]::ERROR[0] )
             {
                 if ( $this.pLogToConsole ) 
                 { 
                     $foregroundColor   = "Red"
                     $backgroundColor   = "Black"
-                    Write-Host $outputMessage -ForegroundColor $foregroundColor -BackgroundColor $backgroundColor
+                    Write-Host $message -ForegroundColor $foregroundColor -BackgroundColor $backgroundColor
                 }
-
-                $outputMessage = $outputMessage | fontColourError
-                $this.WriteToLogFile($outputMessage)
+                $message = $message | fontColourError
+                $this.WriteToLogFile($message)
             }
-            ( [Levels]::WARNING -as [int] )
+            ( [Logger]::WARNING[0] )
             {
                 if ( $this.pLogToConsole )
                 { 
                     $foregroundColor   = "Yellow"
                     $backgroundColor   = "Black"
-                    Write-Host $outputMessage -ForegroundColor $foregroundColor -BackgroundColor $backgroundColor
+                    Write-Host $message -ForegroundColor $foregroundColor -BackgroundColor $backgroundColor
                 }
-
-                $outputMessage = $outputMessage | fontColourWarning
-                $this.WriteToLogFile($outputMessage)
+                $message = $message | fontColourWarning
+                $this.WriteToLogFile($message)
             }
-            ( [Levels]::NOTICE -as [int] )
+            ( [Logger]::NOTICE[0] )
             {
                 if ( $this.pLogToConsole ) 
                 {
                     $foregroundColor   = "Green"  #     default = "FF00FFFF"
                     $backgroundColor   = "Black"  # transparent
-                    Write-Host $outputMessage -ForegroundColor $foregroundColor
+                    Write-Host $message -ForegroundColor $foregroundColor
                 }
-                
-                $outputMessage = $outputMessage | fontColourNotice
-                $this.WriteToLogFile($outputMessage)
+                $message = $message | fontColourNotice
+                $this.WriteToLogFile($message)
             }
-            ( [Levels]::INFO -as [int] )
+            ( [Logger]::INFO[0] )
             {
                 if ( $this.pLogToConsole ) 
                 {
                     $foregroundColor   =   "Cyan"  #     default = "FF00FFFF"
                     $backgroundColor   = "Blue"  # transparent
-                    Write-Host $outputMessage -ForegroundColor $foregroundColor
+                    Write-Host $message -ForegroundColor $foregroundColor
                 }
-                
-                $outputMessage = $outputMessage | fontColourInfo
-                $this.WriteToLogFile($outputMessage)
+                $message = $message | fontColourInfo
+                $this.WriteToLogFile($message)
             }
-            ( [Levels]::DEBUG -as [int] )
+            ( [Logger]::DEBUG[0] )
             {
                 if ( $this.pLogToConsole ) 
                 {
                     $foregroundColor   = "Gray"
                     $backgroundColor   = "Blue"
-                    Write-host $outputMessage -ForegroundColor $foregroundColor
+                    Write-host $message -ForegroundColor $foregroundColor
                 }
-
-                $outputMessage = $outputMessage | fontColourDebug       #add colour
-                $this.WriteToLogFile($outputMessage)                         #output to log file
+                $message = $message | fontColourDebug       #add colour
+                $this.WriteToLogFile($message)                         #output to log file
             }
             default
             {
@@ -348,18 +489,15 @@ Class Logger{
                 {
                     $foregroundColor   = "Gray"  #     default = "FF00FFFF"
                     #$backgroundColor   = "00FFFFFF"  # transparent
-                    Write-host $outputMessage -ForegroundColor $foregroundColor
+                    Write-host $message -ForegroundColor $foregroundColor
                 }
-
-                $outputMessage = $outputMessage | fontColourInfo
-                $this.WriteToLogFile($outputMessage)
+                $message = $message | fontColourInfo
+                $this.WriteToLogFile($message)
             }
         }
         $this.reset()
     }
 }
-        
-
 
 #linux log colours explained: https://automationrhapsody.com/coloured-log-files-linux/
 filter fontColourEmergency{"[1;31m[40m$_[0m"} #fore = RED, back = DEFAULT, self = BOLD
@@ -374,36 +512,5 @@ filter fontColourDebug{"[0;30m[49m$_[0m"} #fore = DARK_GRAY, back = DEFAULT, 
 
 #prefix filters
 filter timestamp {"$(Get-Date -Format "yyyy-MM-dd HH:mm:ss:ffffff") | $_"}
-
-
-Enum Levels{
-    EMERGENCY                   = 1
-    ALERT                       = 2
-    CRITICAL                    = 3
-    ERROR                       = 4
-    WARNING                     = 5
-    NOTICE                      = 6
-    INFO                        = 7
-    DEBUG                       = 8
-}
-Enum Environments{
-    DEVELOPMENT                 = 1
-    PRODUCTION                  = 2
-}
-
-# Class DefaultMessages
-# {
-#     $message = @(
-#         @{Level = [Levels]::EMERGENCY;             Message = "An EMERGENCY has occurred"           },
-#         @{Level = [Levels]::ALERT;                 Message = "An ALERT has been invoked"           },
-#         @{Level = [Levels]::CRITICAL;              Message = "A CRITICAL error has occurred"       },
-#         @{Level = [Levels]::ERROR;                 Message = "An ERROR has occurred"               },
-#         @{Level = [Levels]::WARNING;               Message = "A WARNING has been invoked"          },
-#         @{Level = [Levels]::NOTICE;                Message = "A NOTICE has been invoked"           },
-#         @{Level = [Levels]::INFO;                  Message = "This INFO has been invoked"          },
-#         @{Level = [Levels]::EMERGENCY;             Message = "This DEBUG has been invoked"         }
-#     )
-    
-# }
 
 Export-ModuleMember  -Function * -Variable *
